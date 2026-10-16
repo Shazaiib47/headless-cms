@@ -4,7 +4,7 @@ A full-stack headless CMS that lets non-technical staff create, edit, preview,
 publish and manage website pages without changing code. Published content is
 delivered through a Laravel REST API to a public-facing Vue 3 frontend.
 
-> **Status:** In development. Milestone 01 (project setup) complete.
+> > **Status:** In development. Milestones 01 (setup) and 02 (Laravel backend) complete.
 
 ## Tech stack
 
@@ -35,4 +35,16 @@ headless-cms/
 
 ## Setup
 
-Setup instructions will be added as each part of the project is built.
+## Backend setup (Laravel 13)
+
+Requires PHP 8.3+, Composer and MySQL 8.
+
+    cd backend
+    composer install
+    cp .env.example .env
+    php artisan key:generate
+    # create a MySQL database and user, then set DB_* values in .env
+    php artisan migrate
+    php artisan serve
+
+Health check: `GET http://127.0.0.1:8000/api/health`
