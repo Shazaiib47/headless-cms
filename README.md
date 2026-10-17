@@ -4,7 +4,7 @@ A full-stack headless CMS that lets non-technical staff create, edit, preview,
 publish and manage website pages without changing code. Published content is
 delivered through a Laravel REST API to a public-facing Vue 3 frontend.
 
-> **Status:** In development. Milestones 01 to 03 (setup, Laravel backend, Vue frontend) complete.
+>> **Status:** In development. Milestones 01 to 04 (setup, backend, frontend, database schema) complete.
 
 ## Tech stack
 
@@ -48,6 +48,25 @@ Requires PHP 8.3+, Composer and MySQL 8.
     php artisan serve
 
 Health check: `GET http://127.0.0.1:8000/api/health`
+
+## Data model
+
+```mermaid
+erDiagram
+    USERS ||--o{ PAGES : "creates / updates"
+    USERS ||--o{ MEDIA : uploads
+    USERS ||--o{ PAGE_REVISIONS : authors
+    PAGES ||--o{ PAGE_REVISIONS : has
+    MEDIA |o--o{ PAGES : "og image"
+```
+
+- **Content blocks** are stored as a validated JSON array on `pages.content`.
+- **Roles** (`admin`, `editor`, `viewer`) are an enum column on `users`.
+- **Revisions** are immutable snapshots with a per-page version number.
+- `role`, `status` and `published_at` are not mass assignable.
+
+Seed demo data locally with `php artisan migrate:fresh --seed`
+(local development only; the seeder refuses to run in production).
 
 ## Frontend setup (Vue 3 + TypeScript)
 
