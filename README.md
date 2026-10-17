@@ -4,7 +4,7 @@ A full-stack headless CMS that lets non-technical staff create, edit, preview,
 publish and manage website pages without changing code. Published content is
 delivered through a Laravel REST API to a public-facing Vue 3 frontend.
 
->> **Status:** In development. Milestones 01 to 04 (setup, backend, frontend, database schema) complete.
+>> > **Status:** In development. Milestones 01 to 05 (setup, backend, frontend, schema, page API) complete.
 
 ## Tech stack
 
@@ -67,6 +67,23 @@ erDiagram
 
 Seed demo data locally with `php artisan migrate:fresh --seed`
 (local development only; the seeder refuses to run in production).
+
+## API (admin, work in progress)
+
+Authentication and authorisation are added in Milestone 06; until then these
+routes are open and for local development only.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/pages` | List pages (summaries). Params: `search`, `status`, `sort`, `per_page`, `page` |
+| POST | `/api/pages` | Create a draft page |
+| GET | `/api/pages/{id}` | Retrieve a page with its content blocks |
+| PUT/PATCH | `/api/pages/{id}` | Update a page |
+| DELETE | `/api/pages/{id}` | Delete a page |
+
+Responses use a `data` wrapper; lists add `links` and `meta`. Validation
+errors return HTTP 422 with an `errors` object. `status` and `published_at`
+cannot be set through these endpoints.
 
 ## Frontend setup (Vue 3 + TypeScript)
 
