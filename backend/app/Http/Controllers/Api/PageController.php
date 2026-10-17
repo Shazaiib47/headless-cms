@@ -12,9 +12,26 @@ use App\Models\Page;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class PageController extends Controller
+class PageController extends Controller implements HasMiddleware
 {
+    /**
+     * Authorisation is enforced by PagePolicy before any validation or
+     * controller logic runs, so a forbidden request never reaches them.
+     */
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('can:viewAny,'.Page::class, only: ['index']),
+            new Middleware('can:view,page', only: ['show']),
+            new Middleware('can:create,'.Page::class, only: ['store']),
+            new Middleware('can:update,page', only: ['update']),
+            new Middleware('can:delete,page', only: ['destroy']),
+        ];
+    }
+
     public function index(IndexPageRequest $request): AnonymousResourceCollection
     {
         $filters = $request->validated();
@@ -48,7 +65,12 @@ class PageController extends Controller
 
     public function store(StorePageRequest $request): JsonResponse
     {
-        $page = Page::create($request->validated());
+        $page = new Page($request->validated());
+
+        // Audit columns are not mass assignable; the server sets them.
+        $page->created_by = $request->user()->id;
+        $page->updated_by = $request->user()->id;
+        $page->save();
 
         return (new PageResource($page))
             ->response()
@@ -62,7 +84,9 @@ class PageController extends Controller
 
     public function update(UpdatePageRequest $request, Page $page): PageResource
     {
-        $page->update($request->validated());
+        $page->fill($request->validated());
+        $page->updated_by = $request->user()->id;
+        $page->save();
 
         return new PageResource($page);
     }

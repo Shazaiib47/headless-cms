@@ -19,7 +19,7 @@ class IndexPageRequest extends FormRequest
 
     public function authorize(): bool
     {
-        // Authorisation is added with policies in Milestone 06.
+        // Authorisation is enforced by PagePolicy via the controller middleware.
         return true;
     }
 

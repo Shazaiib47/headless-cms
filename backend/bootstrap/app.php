@@ -13,7 +13,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Cookie/session authentication for the first-party Vue SPA.
+        $middleware->statefulApi();
+
+        // This backend has no login page to redirect guests to. API requests
+        // get a JSON 401 (never a redirect), whatever Accept header they send.
+        $middleware->redirectGuestsTo(
+            fn (Request $request) => $request->is('api/*') ? null : '/'
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

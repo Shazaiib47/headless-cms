@@ -4,7 +4,7 @@ A full-stack headless CMS that lets non-technical staff create, edit, preview,
 publish and manage website pages without changing code. Published content is
 delivered through a Laravel REST API to a public-facing Vue 3 frontend.
 
->> > **Status:** In development. Milestones 01 to 05 (setup, backend, frontend, schema, page API) complete.
+>> > **Status:** In development. Milestones 01 to 06 complete.
 
 ## Tech stack
 
@@ -67,6 +67,24 @@ erDiagram
 
 Seed demo data locally with `php artisan migrate:fresh --seed`
 (local development only; the seeder refuses to run in production).
+
+
+## Authentication and roles
+
+Cookie-based Laravel Sanctum authentication for the Vue SPA: an HttpOnly
+session cookie plus a CSRF token. The SPA first calls `GET /sanctum/csrf-cookie`,
+then `POST /api/login`. Failed logins are rate limited per email and IP.
+
+| Role | Pages |
+|------|-------|
+| viewer | list and view |
+| editor | viewer, plus create and update |
+| admin | editor, plus delete |
+
+Permissions are enforced server-side by `PagePolicy`, not only in the UI.
+Use `localhost` (not `127.0.0.1`) in local URLs so cookies match. Required
+settings are in `backend/.env.example`.
+
 
 ## API (admin, work in progress)
 

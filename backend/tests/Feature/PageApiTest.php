@@ -4,12 +4,23 @@ namespace Tests\Feature;
 
 use App\Enums\PageStatus;
 use App\Models\Page;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class PageApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected User $admin;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->admin = User::factory()->admin()->create();
+        $this->actingAs($this->admin);
+    }
 
     private function validPayload(array $overrides = []): array
     {
@@ -143,7 +154,7 @@ class PageApiTest extends TestCase
         $this->assertDatabaseHas('pages', ['slug' => 'summer-sale', 'status' => 'draft']);
     }
 
-    public function test_store_ignores_status_and_audit_fields(): void
+    public function test_store_ignores_status_and_client_supplied_audit_fields(): void
     {
         $this->postJson('/api/pages', $this->validPayload([
             'status' => 'published',
@@ -155,7 +166,7 @@ class PageApiTest extends TestCase
 
         $this->assertSame(PageStatus::Draft, $page->status);
         $this->assertNull($page->published_at);
-        $this->assertNull($page->created_by);
+        $this->assertSame($this->admin->id, $page->created_by);
     }
 
     public function test_store_requires_title_and_slug(): void
