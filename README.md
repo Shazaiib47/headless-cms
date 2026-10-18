@@ -4,7 +4,7 @@ A full-stack headless CMS that lets non-technical staff create, edit, preview,
 publish and manage website pages without changing code. Published content is
 delivered through a Laravel REST API to a public-facing Vue 3 frontend.
 
->> > **Status:** In development. Milestones 01 to 06 complete.
+>> > **Status:** In development. Milestones 01 to 07 complete.
 
 ## Tech stack
 
@@ -104,6 +104,8 @@ errors return HTTP 422 with an `errors` object. `status` and `published_at`
 cannot be set through these endpoints.
 
 ## Frontend setup (Vue 3 + TypeScript)
+
+Admin: http://localhost:5173/admin (needs the backend running at http://localhost:8000).
 
 Requires Node.js LTS and npm.
 
