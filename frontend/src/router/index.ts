@@ -6,6 +6,7 @@ import HomeView from '@/views/public/HomeView.vue'
 declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean
+    requiresAdmin?: boolean
     guestOnly?: boolean
   }
 }
@@ -31,6 +32,24 @@ const router = createRouter({
           name: 'admin-pages',
           component: () => import('@/views/admin/PagesView.vue'),
         },
+        {
+          path: 'users',
+          name: 'admin-users',
+          component: () => import('@/views/admin/UsersView.vue'),
+          meta: { requiresAdmin: true },
+        },
+        {
+          path: 'users/new',
+          name: 'admin-user-new',
+          component: () => import('@/views/admin/UserFormView.vue'),
+          meta: { requiresAdmin: true },
+        },
+        {
+          path: 'users/:id(\\d+)/edit',
+          name: 'admin-user-edit',
+          component: () => import('@/views/admin/UserFormView.vue'),
+          meta: { requiresAdmin: true },
+        },
       ],
     },
   ],
@@ -46,6 +65,10 @@ router.beforeEach(async (to) => {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
   if (to.meta.guestOnly && auth.isAuthenticated) {
+    return { name: 'admin-pages' }
+  }
+  // A convenience only: the API enforces admin-only access regardless.
+  if (to.meta.requiresAdmin && !auth.isAdmin) {
     return { name: 'admin-pages' }
   }
   return true

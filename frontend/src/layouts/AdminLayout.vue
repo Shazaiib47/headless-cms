@@ -24,13 +24,21 @@ async function logout() {
       <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
         <div class="flex items-center gap-6">
           <span class="text-lg font-semibold">Headless CMS</span>
-          <nav aria-label="Main">
+          <nav aria-label="Main" class="flex items-center gap-1">
             <RouterLink
               :to="{ name: 'admin-pages' }"
               class="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
               active-class="bg-slate-100 text-slate-900"
             >
               Pages
+            </RouterLink>
+            <RouterLink
+              v-if="auth.isAdmin"
+              :to="{ name: 'admin-users' }"
+              class="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
+              active-class="bg-slate-100 text-slate-900"
+            >
+              Users
             </RouterLink>
           </nav>
         </div>

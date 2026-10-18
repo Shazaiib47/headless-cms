@@ -1,10 +1,17 @@
 export type Role = 'admin' | 'editor' | 'viewer'
 
+export const ROLES: readonly Role[] = ['admin', 'editor', 'viewer']
+
 export interface User {
   id: number
   name: string
   email: string
   role: Role
+}
+
+/** A user as returned by the admin user-management API. */
+export interface ManagedUser extends User {
+  created_at: string
 }
 
 export type PageStatus = 'draft' | 'published'
