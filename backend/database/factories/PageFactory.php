@@ -11,12 +11,12 @@ class PageFactory extends Factory
     public function definition(): array
     {
         $title = fake()->unique()->sentence(3);
+        $paragraph = fake()->paragraph();
 
         return [
             'title' => $title,
             'slug' => Str::slug($title),
             'status' => PageStatus::Draft,
-            // Provisional block shapes; finalised in Milestone 08.
             'content' => [
                 [
                     'id' => (string) Str::uuid(),
@@ -25,12 +25,17 @@ class PageFactory extends Factory
                         'heading' => $title,
                         'subheading' => fake()->sentence(),
                         'image_id' => null,
+                        'button_label' => null,
+                        'button_url' => null,
                     ],
                 ],
                 [
                     'id' => (string) Str::uuid(),
                     'type' => 'rich_text',
-                    'data' => ['html' => '<p>'.fake()->paragraph().'</p>'],
+                    'data' => [
+                        'markdown' => $paragraph,
+                        'html' => '<p>'.e($paragraph).'</p>',
+                    ],
                 ],
             ],
             'meta_title' => $title,

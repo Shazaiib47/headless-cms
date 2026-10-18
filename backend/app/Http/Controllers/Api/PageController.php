@@ -14,6 +14,9 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class PageController extends Controller implements HasMiddleware
 {
@@ -84,11 +87,25 @@ class PageController extends Controller implements HasMiddleware
 
     public function update(UpdatePageRequest $request, Page $page): PageResource
     {
-        $page->fill($request->validated());
-        $page->updated_by = $request->user()->id;
-        $page->save();
+        $data = $request->validated();
+        $expected = Arr::pull($data, 'updated_at');
 
-        return new PageResource($page);
+        $updated = DB::transaction(function () use ($request, $page, $data, $expected) {
+            // Lock the row so two simultaneous saves cannot both pass the check.
+            $current = Page::query()->lockForUpdate()->findOrFail($page->id);
+
+            if ($expected !== null && ! Carbon::parse($expected)->equalTo($current->updated_at)) {
+                abort(409, 'This page was changed by someone else after you opened it. Reload to see their changes.');
+            }
+
+            $current->fill($data);
+            $current->updated_by = $request->user()->id;
+            $current->save();
+
+            return $current;
+        });
+
+        return new PageResource($updated);
     }
 
     public function destroy(Page $page): Response
