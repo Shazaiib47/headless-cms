@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PageController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
@@ -32,4 +33,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Permissions are enforced by PagePolicy (see PageController::middleware()).
     Route::apiResource('pages', PageController::class);
+    Route::apiResource('users', UserController::class);
 });
