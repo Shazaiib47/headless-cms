@@ -4,7 +4,7 @@ A full-stack headless CMS that lets non-technical staff create, edit, preview,
 publish and manage website pages without changing code. Published content is
 delivered through a Laravel REST API to a public-facing Vue 3 frontend.
 
-> **Status:** In development. Milestones 01 to 07 complete.
+> **Status:** In development. Milestones 01 to 08 complete.
 
 ## Tech stack
 

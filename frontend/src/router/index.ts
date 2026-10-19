@@ -7,6 +7,7 @@ declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean
     requiresAdmin?: boolean
+    requiresEditor?: boolean
     guestOnly?: boolean
   }
 }
@@ -31,6 +32,18 @@ const router = createRouter({
           path: 'pages',
           name: 'admin-pages',
           component: () => import('@/views/admin/PagesView.vue'),
+        },
+        {
+          path: 'pages/new',
+          name: 'admin-page-new',
+          component: () => import('@/views/admin/PageFormView.vue'),
+          meta: { requiresEditor: true },
+        },
+        {
+          // Viewers may open pages read-only.
+          path: 'pages/:id(\\d+)/edit',
+          name: 'admin-page-edit',
+          component: () => import('@/views/admin/PageFormView.vue'),
         },
         {
           path: 'users',
@@ -67,8 +80,11 @@ router.beforeEach(async (to) => {
   if (to.meta.guestOnly && auth.isAuthenticated) {
     return { name: 'admin-pages' }
   }
-  // A convenience only: the API enforces admin-only access regardless.
+  // Conveniences only: the API enforces these permissions regardless.
   if (to.meta.requiresAdmin && !auth.isAdmin) {
+    return { name: 'admin-pages' }
+  }
+  if (to.meta.requiresEditor && !auth.canEdit) {
     return { name: 'admin-pages' }
   }
   return true

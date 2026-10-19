@@ -72,4 +72,28 @@ describe('route guards', () => {
 
     expect(router.currentRoute.value.name).toBe('admin-pages')
   })
+
+  it('lets editors open the new-page form', async () => {
+    signInAs('editor')
+
+    await router.push('/admin/pages/new')
+
+    expect(router.currentRoute.value.name).toBe('admin-page-new')
+  })
+
+  it('keeps viewers out of the new-page form', async () => {
+    signInAs('viewer')
+
+    await router.push('/admin/pages/new')
+
+    expect(router.currentRoute.value.name).toBe('admin-pages')
+  })
+
+  it('lets viewers open an existing page read-only', async () => {
+    signInAs('viewer')
+
+    await router.push('/admin/pages/5/edit')
+
+    expect(router.currentRoute.value.name).toBe('admin-page-edit')
+  })
 })

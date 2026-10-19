@@ -1,3 +1,5 @@
+import type { Block } from '@/types/blocks'
+
 export type Role = 'admin' | 'editor' | 'viewer'
 
 export const ROLES: readonly Role[] = ['admin', 'editor', 'viewer']
@@ -24,6 +26,26 @@ export interface PageSummary {
   published_at: string | null
   created_at: string
   updated_at: string
+}
+
+/** A full page. `content` is validated and converted by fromApiBlocks(). */
+export interface PageDetail extends PageSummary {
+  content: unknown
+  meta_title: string | null
+  meta_description: string | null
+  og_image_id: number | null
+  created_by: number | null
+  updated_by: number | null
+}
+
+export interface PageInput {
+  title: string
+  slug: string
+  meta_title: string
+  meta_description: string
+  content: Block[]
+  /** The timestamp the editor loaded; the server answers 409 if it is stale. */
+  updated_at?: string
 }
 
 export interface PaginationMeta {

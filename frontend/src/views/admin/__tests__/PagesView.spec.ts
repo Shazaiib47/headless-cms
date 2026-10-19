@@ -51,7 +51,15 @@ async function mountView(url = '/admin/pages', role: Role | null = 'viewer') {
 
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: [{ path: '/admin/pages', name: 'admin-pages', component: { render: () => null } }],
+    routes: [
+      { path: '/admin/pages', name: 'admin-pages', component: { render: () => null } },
+      { path: '/admin/pages/new', name: 'admin-page-new', component: { render: () => null } },
+      {
+        path: '/admin/pages/:id(\\d+)/edit',
+        name: 'admin-page-edit',
+        component: { render: () => null },
+      },
+    ],
   })
   await router.push(url)
   await router.isReady()
@@ -184,5 +192,15 @@ describe('PagesView', () => {
     await flushPromises()
 
     expect(pagesApi.remove).not.toHaveBeenCalled()
+  })
+
+  it('offers New page and Edit to editors, but only View to viewers', async () => {
+    const editor = await mountView('/admin/pages', 'editor')
+    expect(editor.wrapper.text()).toContain('New page')
+    expect(editor.wrapper.find('a[aria-label="Edit About us"]').exists()).toBe(true)
+
+    const viewer = await mountView('/admin/pages', 'viewer')
+    expect(viewer.wrapper.text()).not.toContain('New page')
+    expect(viewer.wrapper.find('a[aria-label="View About us"]').exists()).toBe(true)
   })
 })

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { ApiError } from '@/api/http'
 import { pagesApi } from '@/api/pages'
 import PaginationBar from '@/components/common/PaginationBar.vue'
@@ -203,10 +203,21 @@ onBeforeUnmount(() => {
 
 <template>
   <section>
-    <h1 class="text-2xl font-semibold">Pages</h1>
-    <p v-if="meta && !error" class="mt-1 text-sm text-slate-600">
-      {{ meta.total }} {{ meta.total === 1 ? 'page' : 'pages' }}
-    </p>
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h1 class="text-2xl font-semibold">Pages</h1>
+        <p v-if="meta && !error" class="mt-1 text-sm text-slate-600">
+          {{ meta.total }} {{ meta.total === 1 ? 'page' : 'pages' }}
+        </p>
+      </div>
+      <RouterLink
+        v-if="auth.canEdit"
+        :to="{ name: 'admin-page-new' }"
+        class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+      >
+        New page
+      </RouterLink>
+    </div>
 
     <form class="mt-4 grid gap-3 sm:grid-cols-[1fr_auto_auto]" role="search" @submit.prevent>
       <div>
@@ -330,6 +341,13 @@ onBeforeUnmount(() => {
         <div class="flex flex-wrap items-center gap-3 text-sm">
           <StatusBadge :status="page.status" />
           <span class="text-slate-500">Updated {{ formatDate(page.updated_at) }}</span>
+          <RouterLink
+            :to="{ name: 'admin-page-edit', params: { id: page.id } }"
+            :aria-label="`${auth.canEdit ? 'Edit' : 'View'} ${page.title}`"
+            class="rounded-md border border-slate-300 px-3 py-1 font-medium text-slate-700 hover:bg-slate-100"
+          >
+            {{ auth.canEdit ? 'Edit' : 'View' }}
+          </RouterLink>
           <button
             v-if="auth.isAdmin"
             type="button"
