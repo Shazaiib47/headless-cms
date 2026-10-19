@@ -41,7 +41,12 @@ function err(field: string): string[] {
       <textarea v-bind="field" v-model="card.text" rows="2" maxlength="300" :class="inputClass" />
     </FormField>
 
-    <ImageField :image-id="card.image_id" />
+    <ImageField
+      :id="`${id}-image`"
+      :label="`Card ${position} image`"
+      v-model:image-id="card.image_id"
+      :errors="err('image_id')"
+    />
 
     <div class="grid gap-4 sm:grid-cols-2">
       <FormField

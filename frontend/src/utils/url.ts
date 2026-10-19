@@ -35,6 +35,17 @@ export function safeHref(url: string | null | undefined): string | null {
   return /^mailto:[^@\s]+@[^@\s]+$/i.test(url) ? url : null
 }
 
+/** For `<img src>`: only http(s) and site-relative addresses (no mailto:, anchors or data: URLs). */
+export function safeImageSrc(url: string | null | undefined): string | null {
+  const href = safeHref(url)
+
+  if (href === null || href.startsWith('#') || href.toLowerCase().startsWith('mailto:')) {
+    return null
+  }
+
+  return href
+}
+
 export function isExternal(url: string): boolean {
   return /^https?:\/\//i.test(url)
 }

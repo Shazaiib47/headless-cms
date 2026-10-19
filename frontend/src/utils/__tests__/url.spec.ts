@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isExternal, safeHref } from '@/utils/url'
+import { isExternal, safeHref, safeImageSrc } from '@/utils/url'
 
 describe('safeHref', () => {
   it('accepts http(s) URLs, mailto links, relative paths and anchors', () => {
@@ -52,5 +52,36 @@ describe('isExternal', () => {
     expect(isExternal('/about')).toBe(false)
     expect(isExternal('mailto:a@b.co')).toBe(false)
     expect(isExternal('#top')).toBe(false)
+  })
+
+  describe('safeImageSrc', () => {
+    it('accepts http(s) and site-relative image addresses', () => {
+      const safe = [
+        'https://cdn.example.com/a.jpg',
+        'http://localhost:8000/storage/media/a.jpg',
+        '/storage/media/a.jpg',
+      ]
+
+      for (const url of safe) {
+        expect(safeImageSrc(url)).toBe(url)
+      }
+    })
+
+    it('rejects anything that is not a plain image address', () => {
+      const unsafe = [
+        'javascript:alert(1)',
+        'data:image/svg+xml;base64,PHN2Zz4=',
+        'mailto:a@b.co',
+        '#top',
+        '//evil.example/a.jpg',
+        '',
+        null,
+        undefined,
+      ]
+
+      for (const url of unsafe) {
+        expect(safeImageSrc(url)).toBeNull()
+      }
+    })
   })
 })

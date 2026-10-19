@@ -15,10 +15,14 @@ function err(field: string): string[] {
 
 <template>
   <div class="space-y-4">
-    <ImageField :image-id="data.image_id" />
-    <p v-if="err('image_id').length" class="text-sm text-red-700">
-      {{ err('image_id').join(' ') }}
-    </p>
+    <ImageField
+      :id="`${id}-image`"
+      label="Image"
+      :optional="false"
+      hint="Required before the page can be published."
+      v-model:image-id="data.image_id"
+      :errors="err('image_id')"
+    />
 
     <FormField
       :id="`${id}-alt`"

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import SafeLink from '@/components/render/SafeLink.vue'
-import type { CardGridData } from '@/types/blocks'
+import type { CardGridRenderData } from '@/types/render'
 
-defineProps<{ data: CardGridData }>()
+defineProps<{ data: CardGridRenderData }>()
 </script>
 
 <template>
@@ -14,6 +14,14 @@ defineProps<{ data: CardGridData }>()
         :key="index"
         class="flex flex-col rounded-lg border border-slate-200 bg-white p-5"
       >
+        <img
+          v-if="card.image"
+          :src="card.image.url"
+          :alt="card.image.alt ?? ''"
+          loading="lazy"
+          decoding="async"
+          class="mb-3 aspect-video w-full rounded-md bg-slate-100 object-cover"
+        />
         <h3 class="text-lg font-semibold text-slate-900">{{ card.title }}</h3>
         <p v-if="card.text" class="mt-2 text-slate-600">{{ card.text }}</p>
         <SafeLink

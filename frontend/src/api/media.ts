@@ -12,6 +12,8 @@ export const mediaApi = {
   list: (params: MediaListParams = {}) =>
     http.get<Paginated<MediaItem>>(`/api/media${buildQuery(params)}`),
 
+  get: (id: number) => http.get<{ data: MediaItem }>(`/api/media/${id}`),
+
   upload(file: File, altText?: string) {
     const form = new FormData()
     form.append('file', file)

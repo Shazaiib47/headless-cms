@@ -1,17 +1,36 @@
 import type { PageStatus } from '@/types/api'
-import type { CardGridData, CtaData, HeroData, ImageBlockData } from '@/types/blocks'
+import type { CardData, CardGridData, CtaData, HeroData, ImageBlockData } from '@/types/blocks'
+
+/** An image as the public and preview APIs describe it (resolved from its media id). */
+export interface PublicImage {
+  url: string
+  thumbnail_url: string | null
+  width: number | null
+  height: number | null
+  alt: string | null
+}
+
+interface WithImage {
+  image?: PublicImage | null
+}
 
 export interface RichTextRenderData {
   /** Server-generated, sanitised HTML. The Markdown source is never sent publicly. */
   html: string
 }
 
+export type HeroRenderData = HeroData & WithImage
+export type ImageRenderData = ImageBlockData & WithImage
+export type CardGridRenderData = Omit<CardGridData, 'cards'> & {
+  cards: Array<CardData & WithImage>
+}
+
 export type RenderBlock =
-  | { id: string; type: 'hero'; data: HeroData }
+  | { id: string; type: 'hero'; data: HeroRenderData }
   | { id: string; type: 'rich_text'; data: RichTextRenderData }
-  | { id: string; type: 'image'; data: ImageBlockData }
+  | { id: string; type: 'image'; data: ImageRenderData }
   | { id: string; type: 'cta'; data: CtaData }
-  | { id: string; type: 'card_grid'; data: CardGridData }
+  | { id: string; type: 'card_grid'; data: CardGridRenderData }
 
 /** A page as returned by the preview endpoint (the public shape plus its status). */
 export interface PreviewPage {

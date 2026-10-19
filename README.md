@@ -4,7 +4,7 @@ A full-stack headless CMS that lets non-technical staff create, edit, preview,
 publish and manage website pages without changing code. Published content is
 delivered through a Laravel REST API to a public-facing Vue 3 frontend.
 
-> **Status:** In development. Milestones 01 to 09 complete; Milestone 10 (media library) in progress.
+> **Status:** In development. Milestones 01 to 10 complete.
 
 ## Tech stack
 
@@ -181,6 +181,8 @@ Publishing controls and a draft preview in the page editor, plus block-rendering
 
 Admin: http://localhost:5173/admin (needs the backend running at http://localhost:8000).
 Admin screens: page list (search, filter, pagination) and user management (admin only)
+Media library: upload (click or drag and drop, with per-file status), search, alt-text editing and delete
+Image picker (searchable modal with upload), real images in the preview, and publishable image blocks.
 
 Requires Node.js LTS and npm.
 

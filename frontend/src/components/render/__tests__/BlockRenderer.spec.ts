@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import BlockRenderer from '../BlockRenderer.vue'
-import type { RenderBlock } from '@/types/render'
+import type { PublicImage, RenderBlock } from '@/types/render'
+
+const IMAGE: PublicImage = {
+  url: 'http://localhost:8000/storage/media/a.jpg',
+  thumbnail_url: 'http://localhost:8000/storage/media/thumbs/a.jpg',
+  width: 1200,
+  height: 800,
+  alt: 'Library alt text',
+}
 
 function render(blocks: RenderBlock[]) {
   return mount(BlockRenderer, { props: { blocks } })
@@ -106,5 +114,64 @@ describe('BlockRenderer', () => {
     const wrapper = render([])
 
     expect(wrapper.text()).toContain('This page has no content yet.')
+  })
+
+  it('renders a hero image decoratively behind the heading', () => {
+    const wrapper = render([
+      {
+        id: 'h',
+        type: 'hero',
+        data: {
+          heading: 'Welcome',
+          subheading: '',
+          image_id: 3,
+          button_label: '',
+          button_url: '',
+          image: IMAGE,
+        },
+      },
+    ])
+
+    const img = wrapper.find('img')
+    expect(img.attributes('src')).toBe(IMAGE.url)
+    expect(img.attributes('alt')).toBe('')
+    expect(wrapper.find('h2').text()).toBe('Welcome')
+  })
+
+  it('renders an image block with its own alt text and dimensions', () => {
+    const wrapper = render([
+      {
+        id: 'i',
+        type: 'image',
+        data: { image_id: 3, alt: 'A cat on a sofa', caption: 'Cute', image: IMAGE },
+      },
+    ])
+
+    const img = wrapper.find('img')
+    expect(img.attributes('src')).toBe(IMAGE.url)
+    expect(img.attributes('alt')).toBe('A cat on a sofa')
+    expect(img.attributes('width')).toBe('1200')
+    expect(img.attributes('height')).toBe('800')
+    expect(wrapper.find('[role="img"]').exists()).toBe(false)
+  })
+
+  it('renders card images with the library alt text', () => {
+    const wrapper = render([
+      {
+        id: 'g',
+        type: 'card_grid',
+        data: {
+          heading: '',
+          cards: [
+            { title: 'One', text: '', image_id: 3, link_label: '', link_url: '', image: IMAGE },
+            { title: 'Two', text: '', image_id: null, link_label: '', link_url: '' },
+          ],
+        },
+      },
+    ])
+
+    const images = wrapper.findAll('img')
+    expect(images).toHaveLength(1)
+    expect(images[0]?.attributes('alt')).toBe('Library alt text')
   })
 })

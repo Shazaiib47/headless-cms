@@ -41,7 +41,12 @@ function err(field: string): string[] {
       />
     </FormField>
 
-    <ImageField :image-id="data.image_id" />
+    <ImageField
+      :id="`${id}-image`"
+      label="Hero image"
+      v-model:image-id="data.image_id"
+      :errors="err('image_id')"
+    />
 
     <div class="grid gap-4 sm:grid-cols-2">
       <FormField
