@@ -104,4 +104,12 @@ describe('route guards', () => {
 
     expect(router.currentRoute.value.name).toBe('admin-page-preview')
   })
+
+  it('lets every signed-in role open the media library', async () => {
+    signInAs('viewer')
+
+    await router.push('/admin/media')
+
+    expect(router.currentRoute.value.name).toBe('admin-media')
+  })
 })

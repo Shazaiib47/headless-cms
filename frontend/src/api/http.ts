@@ -58,8 +58,11 @@ async function request<T>(
   options: RequestOptions = {},
   isRetry = false,
 ): Promise<T> {
+  // FormData (file uploads) must be sent as is: the browser adds the multipart boundary.
+  const isForm = typeof FormData !== 'undefined' && body instanceof FormData
+
   const headers: Record<string, string> = { Accept: 'application/json' }
-  if (body !== undefined) headers['Content-Type'] = 'application/json'
+  if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json'
 
   if (method !== 'GET') {
     let token = readCookie('XSRF-TOKEN')
@@ -76,7 +79,7 @@ async function request<T>(
       method,
       headers,
       credentials: 'include',
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body),
     })
   } catch {
     throw new ApiError(0, 'Could not reach the server. Check your connection and try again.')

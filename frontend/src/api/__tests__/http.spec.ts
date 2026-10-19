@@ -100,4 +100,17 @@ describe('http client', () => {
     expect(error).toBeInstanceOf(ApiError)
     expect((error as ApiError).status).toBe(0)
   })
+
+  it('sends FormData as it is, without forcing a JSON content type', async () => {
+    fetchMock.mockResolvedValueOnce(json({ data: 1 }, 201))
+    const form = new FormData()
+    form.append('file', new File(['x'], 'a.jpg', { type: 'image/jpeg' }))
+
+    await http.post('/api/media', form)
+
+    const [, init] = lastCall()
+    expect(init.body).toBe(form)
+    expect(init.headers['Content-Type']).toBeUndefined()
+    expect(init.headers['X-XSRF-TOKEN']).toBe('abc=123')
+  })
 })

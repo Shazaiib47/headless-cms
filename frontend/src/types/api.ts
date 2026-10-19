@@ -61,3 +61,18 @@ export interface Paginated<T> {
   data: T[]
   meta: PaginationMeta
 }
+
+/** An image in the media library. */
+export interface MediaItem {
+  id: number
+  original_name: string
+  alt_text: string | null
+  mime_type: string
+  size: number
+  width: number
+  height: number
+  url: string
+  thumbnail_url: string | null
+  uploaded_by: number | null
+  created_at: string
+}

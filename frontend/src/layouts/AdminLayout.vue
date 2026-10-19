@@ -33,6 +33,13 @@ async function logout() {
               Pages
             </RouterLink>
             <RouterLink
+              :to="{ name: 'admin-media' }"
+              class="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
+              active-class="bg-slate-100 text-slate-900"
+            >
+              Media
+            </RouterLink>
+            <RouterLink
               v-if="auth.isAdmin"
               :to="{ name: 'admin-users' }"
               class="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"

@@ -52,6 +52,12 @@ const router = createRouter({
           component: () => import('@/views/admin/PagePreviewView.vue'),
         },
         {
+          // Every role may browse the library; uploading and deleting are limited by the API.
+          path: 'media',
+          name: 'admin-media',
+          component: () => import('@/views/admin/MediaView.vue'),
+        },
+        {
           path: 'users',
           name: 'admin-users',
           component: () => import('@/views/admin/UsersView.vue'),
