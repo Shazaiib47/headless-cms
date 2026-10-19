@@ -100,6 +100,10 @@ routes are open and for local development only.
 | DELETE | `/api/pages/{id}` | Delete a page |
 | GET/POST | `/api/users` | List or create users (admin only) |
 | GET/PUT/PATCH/DELETE | `/api/users/{id}` | View, update or delete a user (admin only) |
+| POST | `/api/pages/{id}/publish` | Publish a page (editor or admin) |
+| POST | `/api/pages/{id}/unpublish` | Unpublish a page (editor or admin) |
+| GET | `/api/pages/{id}/preview` | Preview a page in the public format, any status (signed in) |
+| GET | `/api/public/pages/{slug}` | A published page by slug (no login) |
 
 Responses use a `data` wrapper; lists add `links` and `meta`. Validation
 errors return HTTP 422 with an `errors` object. `status` and `published_at`

@@ -29,6 +29,12 @@ class PagePolicy
         return $user->hasRole(Role::Admin, Role::Editor);
     }
 
+    /** Covers both publishing and unpublishing. */
+    public function publish(User $user, Page $page): bool
+    {
+        return $user->hasRole(Role::Admin, Role::Editor);
+    }
+
     /** Deletion is administrator-only. */
     public function delete(User $user, Page $page): bool
     {
