@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Support\Blocks\BlockDefinitions;
+use App\Support\Blocks\FieldLabels;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -36,6 +37,24 @@ class StorePageRequest extends FormRequest
             'meta_description' => ['nullable', 'string', 'max:500'],
             'og_image_id' => ['nullable', 'integer', 'exists:media,id'],
         ];
+    }
+
+    /**
+     * Readable field names for validation messages, so editors see
+     * "The card title field is required." and not the raw path
+     * "content.3.data.cards.0.title".
+     */
+    public function attributes(): array
+    {
+        $attributes = [];
+
+        foreach (array_keys($this->rules()) as $key) {
+            if (str_starts_with($key, 'content')) {
+                $attributes[$key] = FieldLabels::for($key);
+            }
+        }
+
+        return $attributes;
     }
 
     /**

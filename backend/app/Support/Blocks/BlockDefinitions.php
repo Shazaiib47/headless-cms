@@ -206,7 +206,7 @@ final class BlockDefinitions
     {
         return function (string $attribute, mixed $value, Closure $fail): void {
             if (is_array($value) && ! array_is_list($value)) {
-                $fail("The {$attribute} field must be a list.");
+                $fail('The :attribute field must be a list.');
             }
         };
     }

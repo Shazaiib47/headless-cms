@@ -291,4 +291,30 @@ class BlockValidationTest extends TestCase
 
         $this->assertSame('<p>ok</p>', $html);
     }
+
+    public function test_validation_messages_use_readable_field_names(): void
+    {
+        $errors = $this->createPage([
+            $this->block('hero', ['heading' => 'Hi', 'button_label' => 'Go'], 'a'),
+            $this->block('card_grid', ['cards' => [['text' => 'No title']]], 'b'),
+        ])->assertUnprocessable()->json('errors');
+
+        $this->assertSame(
+            'The card title field is required.',
+            $errors['content.1.data.cards.0.title'][0],
+        );
+        $this->assertStringContainsString('button link', $errors['content.0.data.button_url'][0]);
+        $this->assertStringNotContainsString('content.', $errors['content.0.data.button_url'][0]);
+    }
+
+    public function test_custom_rule_messages_use_readable_field_names(): void
+    {
+        $errors = $this->createPage([
+            $this->block('cta', [
+                'heading' => 'Join', 'button_label' => 'Go', 'button_url' => 'javascript:x',
+            ]),
+        ])->assertUnprocessable()->json('errors');
+
+        $this->assertStringStartsWith('The button link must be', $errors['content.0.data.button_url'][0]);
+    }
 }
