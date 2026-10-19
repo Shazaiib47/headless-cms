@@ -7,7 +7,7 @@ import { fromApiBlocks, serializeBlocks } from '@/blocks/model'
 import BlockEditor from '@/components/blocks/BlockEditor.vue'
 import FormField from '@/components/common/FormField.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
-import { inputClass } from '@/components/common/formClasses'
+import { buttonClass, inputClass } from '@/components/common/formClasses'
 import { useAuthStore } from '@/stores/auth'
 import type { PageDetail, PageInput, PageStatus } from '@/types/api'
 import type { Block } from '@/types/blocks'
@@ -48,12 +48,23 @@ const savedSnapshot = ref('')
 const loading = ref(false)
 const loadError = ref('')
 const submitting = ref(false)
+const publishing = ref(false)
 const formError = ref('')
 const fieldErrors = ref<ValidationErrors>({})
 const conflict = ref(false)
 const notice = ref('')
+const publishNotice = ref('')
 const pendingNotice = ref('')
 const summaryRef = ref<HTMLElement | null>(null)
+
+const busy = computed(() => submitting.value || publishing.value)
+const canPublish = computed(() => isEdit.value && auth.canEdit)
+const isLive = computed(() => isEdit.value && status.value === 'published')
+const previewHref = computed(() =>
+  pageId.value === null
+    ? ''
+    : router.resolve({ name: 'admin-page-preview', params: { id: pageId.value } }).href,
+)
 
 const errorCount = computed(() => Object.keys(fieldErrors.value).length)
 const slugWarning = computed(
@@ -97,6 +108,7 @@ function resetState(): void {
   formError.value = ''
   conflict.value = false
   notice.value = ''
+  publishNotice.value = ''
   loadError.value = ''
   savedSnapshot.value = JSON.stringify(payload())
 }
@@ -112,6 +124,12 @@ function applyPage(data: PageDetail): void {
   updatedAt.value = data.updated_at
   slugTouched.value = true
   savedSnapshot.value = JSON.stringify(payload())
+}
+
+/** After publishing: take the new status and timestamp, but leave any unsaved edits alone. */
+function applyStatus(data: PageDetail): void {
+  status.value = data.status
+  updatedAt.value = data.updated_at
 }
 
 async function load(): Promise<void> {
@@ -146,14 +164,29 @@ async function showProblems(): Promise<void> {
   summaryRef.value?.focus()
 }
 
+function handleFailure(caught: unknown): void {
+  if (caught instanceof ApiError && caught.status === 409) {
+    conflict.value = true
+  } else if (
+    caught instanceof ApiError &&
+    caught.status === 422 &&
+    Object.keys(caught.errors).length > 0
+  ) {
+    fieldErrors.value = caught.errors
+  } else {
+    formError.value = errorText(caught)
+  }
+}
+
 async function submit(): Promise<void> {
-  if (submitting.value || readonly.value) return
+  if (busy.value || readonly.value) return
 
   submitting.value = true
   formError.value = ''
   fieldErrors.value = {}
   conflict.value = false
   notice.value = ''
+  publishNotice.value = ''
 
   try {
     const id = pageId.value
@@ -176,20 +209,45 @@ async function submit(): Promise<void> {
       notice.value = 'Changes saved.'
     }
   } catch (caught) {
-    if (caught instanceof ApiError && caught.status === 409) {
-      conflict.value = true
-    } else if (
-      caught instanceof ApiError &&
-      caught.status === 422 &&
-      Object.keys(caught.errors).length > 0
-    ) {
-      fieldErrors.value = caught.errors
-    } else {
-      formError.value = errorText(caught)
-    }
+    handleFailure(caught)
     await showProblems()
   } finally {
     submitting.value = false
+  }
+}
+
+async function changePublication(action: 'publish' | 'unpublish'): Promise<void> {
+  const id = pageId.value
+  if (id === null || busy.value || !auth.canEdit) return
+  // Only saved content can be published.
+  if (action === 'publish' && dirty.value) return
+
+  const question =
+    action === 'publish'
+      ? `Publish "${form.title}"? It will be visible to everyone.`
+      : `Unpublish "${form.title}"? It will no longer be visible to the public.`
+  if (!window.confirm(question)) return
+
+  publishing.value = true
+  formError.value = ''
+  fieldErrors.value = {}
+  conflict.value = false
+  notice.value = ''
+  publishNotice.value = ''
+
+  try {
+    const { data } =
+      action === 'publish'
+        ? await pagesApi.publish(id, updatedAt.value ?? undefined)
+        : await pagesApi.unpublish(id, updatedAt.value ?? undefined)
+
+    applyStatus(data)
+    publishNotice.value = action === 'publish' ? 'Page published.' : 'Page unpublished.'
+  } catch (caught) {
+    handleFailure(caught)
+    await showProblems()
+  } finally {
+    publishing.value = false
   }
 }
 
@@ -207,6 +265,8 @@ function confirmLeave(): boolean {
   return !dirty.value || window.confirm('You have unsaved changes. Leave without saving?')
 }
 
+// A router-level guard keeps working even if Vue reuses this component while
+// moving from /pages/new to /pages/:id/edit after the first save.
 const removeLeaveGuard = router.beforeEach(() => confirmLeave())
 onBeforeUnmount(removeLeaveGuard)
 
@@ -247,169 +307,235 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnload)
       </button>
     </div>
 
-    <form v-else class="mt-6 space-y-6" novalidate @submit.prevent="submit">
-      <p
-        v-if="readonly"
-        role="status"
-        class="rounded-md bg-slate-100 px-3 py-2 text-sm text-slate-700"
-      >
-        You have read-only access to this page.
-      </p>
-
+    <template v-else>
       <div
-        v-if="errorCount > 0"
-        ref="summaryRef"
-        tabindex="-1"
-        role="alert"
-        class="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700"
+        v-if="isEdit"
+        data-test="publishing-panel"
+        class="mt-4 space-y-2 rounded-lg border border-slate-200 bg-white p-4"
       >
-        Please fix the {{ errorCount }} highlighted
-        {{ errorCount === 1 ? 'problem' : 'problems' }} and save again.
-      </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <h2 class="text-sm font-semibold text-slate-900">Publishing</h2>
 
-      <div
-        v-if="conflict"
-        ref="summaryRef"
-        tabindex="-1"
-        data-test="conflict"
-        role="alert"
-        class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
-      >
-        <p>
-          This page was changed by someone else after you opened it. Your edits have not been saved.
+          <template v-if="canPublish">
+            <button
+              v-if="!isLive"
+              type="button"
+              data-test="publish"
+              :disabled="busy || dirty"
+              class="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+              @click="changePublication('publish')"
+            >
+              {{ publishing ? 'Publishing…' : 'Publish' }}
+            </button>
+            <button
+              v-else
+              type="button"
+              data-test="unpublish"
+              :disabled="busy"
+              :class="buttonClass"
+              @click="changePublication('unpublish')"
+            >
+              {{ publishing ? 'Unpublishing…' : 'Unpublish' }}
+            </button>
+          </template>
+
+          <a
+            :href="previewHref"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-test="preview"
+            class="text-sm font-medium text-slate-700 underline hover:text-slate-900"
+          >
+            Preview saved version<span class="sr-only"> (opens in a new tab)</span>
+          </a>
+        </div>
+
+        <p
+          v-if="canPublish && !isLive && dirty"
+          data-test="save-first"
+          class="text-sm text-amber-800"
+        >
+          Save your changes before publishing.
         </p>
-        <button
-          type="button"
-          data-test="reload"
-          class="mt-2 rounded-md border border-amber-400 bg-white px-3 py-1.5 font-medium hover:bg-amber-100"
-          @click="load"
+        <p v-if="isLive" data-test="live-notice" class="text-sm text-green-800">
+          This page is live. Saving changes updates the public page immediately.
+          <template v-if="dirty">Your unsaved changes are not live yet.</template>
+        </p>
+        <p
+          v-if="publishNotice"
+          data-test="publish-notice"
+          role="status"
+          class="rounded-md bg-green-50 px-3 py-2 text-sm text-green-800"
         >
-          Discard my changes and reload
-        </button>
+          {{ publishNotice }}
+        </p>
       </div>
 
-      <p
-        v-if="formError"
-        ref="summaryRef"
-        tabindex="-1"
-        role="alert"
-        class="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700"
-      >
-        {{ formError }}
-      </p>
+      <form class="mt-6 space-y-6" novalidate @submit.prevent="submit">
+        <p
+          v-if="readonly"
+          role="status"
+          class="rounded-md bg-slate-100 px-3 py-2 text-sm text-slate-700"
+        >
+          You have read-only access to this page.
+        </p>
 
-      <fieldset :disabled="readonly" class="min-w-0 space-y-6">
-        <legend class="sr-only">Page details</legend>
+        <div
+          v-if="errorCount > 0"
+          ref="summaryRef"
+          tabindex="-1"
+          role="alert"
+          class="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700"
+        >
+          Please fix the {{ errorCount }} highlighted
+          {{ errorCount === 1 ? 'problem' : 'problems' }} and try again.
+        </div>
 
-        <div class="space-y-4 rounded-lg border border-slate-200 bg-white p-4">
-          <FormField id="page-title" label="Title" :errors="fieldErrors.title" v-slot="{ field }">
-            <input
-              v-bind="field"
-              v-model="form.title"
-              type="text"
-              maxlength="255"
-              autocomplete="off"
-              :class="inputClass"
-            />
-          </FormField>
-
-          <FormField
-            id="page-slug"
-            label="Slug"
-            hint="Lowercase letters, numbers and hyphens. This becomes the page address."
-            :errors="fieldErrors.slug"
-            v-slot="{ field }"
-          >
-            <input
-              v-bind="field"
-              v-model="form.slug"
-              type="text"
-              maxlength="255"
-              autocomplete="off"
-              spellcheck="false"
-              :class="inputClass"
-              @input="slugTouched = true"
-            />
-          </FormField>
-
-          <p
-            v-if="slugWarning"
-            role="status"
-            data-test="slug-warning"
-            class="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900"
-          >
-            This page is published. Changing its slug will break its current address.
+        <div
+          v-if="conflict"
+          ref="summaryRef"
+          tabindex="-1"
+          data-test="conflict"
+          role="alert"
+          class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        >
+          <p>
+            This page was changed by someone else after you opened it. Your last action was not
+            applied.
           </p>
-        </div>
-
-        <div class="space-y-3">
-          <h2 class="text-lg font-semibold">Content</h2>
-          <BlockEditor v-model="form.blocks" :errors="fieldErrors" :readonly="readonly" />
-        </div>
-
-        <div class="space-y-4 rounded-lg border border-slate-200 bg-white p-4">
-          <h2 class="text-lg font-semibold">Search engines</h2>
-
-          <FormField
-            id="page-meta-title"
-            label="Meta title"
-            optional
-            hint="Shown in search results and browser tabs."
-            :errors="fieldErrors.meta_title"
-            v-slot="{ field }"
+          <button
+            type="button"
+            data-test="reload"
+            class="mt-2 rounded-md border border-amber-400 bg-white px-3 py-1.5 font-medium hover:bg-amber-100"
+            @click="load"
           >
-            <input
-              v-bind="field"
-              v-model="form.meta_title"
-              type="text"
-              maxlength="255"
-              :class="inputClass"
-            />
-          </FormField>
-
-          <FormField
-            id="page-meta-description"
-            label="Meta description"
-            optional
-            hint="A short summary, up to 500 characters."
-            :errors="fieldErrors.meta_description"
-            v-slot="{ field }"
-          >
-            <textarea
-              v-bind="field"
-              v-model="form.meta_description"
-              rows="3"
-              maxlength="500"
-              :class="inputClass"
-            />
-          </FormField>
+            {{ dirty ? 'Discard my changes and reload' : 'Reload latest version' }}
+          </button>
         </div>
-      </fieldset>
 
-      <p
-        v-if="notice"
-        role="status"
-        class="rounded-md bg-green-50 px-3 py-2 text-sm text-green-800"
-      >
-        {{ notice }}
-      </p>
+        <p
+          v-if="formError"
+          ref="summaryRef"
+          tabindex="-1"
+          role="alert"
+          class="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700"
+        >
+          {{ formError }}
+        </p>
 
-      <div v-if="!readonly" class="flex flex-wrap items-center gap-3">
-        <button
-          type="submit"
-          :disabled="submitting"
-          class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+        <fieldset :disabled="readonly" class="min-w-0 space-y-6">
+          <legend class="sr-only">Page details</legend>
+
+          <div class="space-y-4 rounded-lg border border-slate-200 bg-white p-4">
+            <FormField id="page-title" label="Title" :errors="fieldErrors.title" v-slot="{ field }">
+              <input
+                v-bind="field"
+                v-model="form.title"
+                type="text"
+                maxlength="255"
+                autocomplete="off"
+                :class="inputClass"
+              />
+            </FormField>
+
+            <FormField
+              id="page-slug"
+              label="Slug"
+              hint="Lowercase letters, numbers and hyphens. This becomes the page address."
+              :errors="fieldErrors.slug"
+              v-slot="{ field }"
+            >
+              <input
+                v-bind="field"
+                v-model="form.slug"
+                type="text"
+                maxlength="255"
+                autocomplete="off"
+                spellcheck="false"
+                :class="inputClass"
+                @input="slugTouched = true"
+              />
+            </FormField>
+
+            <p
+              v-if="slugWarning"
+              role="status"
+              data-test="slug-warning"
+              class="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900"
+            >
+              This page is published. Changing its slug will break its current address.
+            </p>
+          </div>
+
+          <div class="space-y-3">
+            <h2 class="text-lg font-semibold">Content</h2>
+            <BlockEditor v-model="form.blocks" :errors="fieldErrors" :readonly="readonly" />
+          </div>
+
+          <div class="space-y-4 rounded-lg border border-slate-200 bg-white p-4">
+            <h2 class="text-lg font-semibold">Search engines</h2>
+
+            <FormField
+              id="page-meta-title"
+              label="Meta title"
+              optional
+              hint="Shown in search results and browser tabs."
+              :errors="fieldErrors.meta_title"
+              v-slot="{ field }"
+            >
+              <input
+                v-bind="field"
+                v-model="form.meta_title"
+                type="text"
+                maxlength="255"
+                :class="inputClass"
+              />
+            </FormField>
+
+            <FormField
+              id="page-meta-description"
+              label="Meta description"
+              optional
+              hint="A short summary, up to 500 characters."
+              :errors="fieldErrors.meta_description"
+              v-slot="{ field }"
+            >
+              <textarea
+                v-bind="field"
+                v-model="form.meta_description"
+                rows="3"
+                maxlength="500"
+                :class="inputClass"
+              />
+            </FormField>
+          </div>
+        </fieldset>
+
+        <p
+          v-if="notice"
+          role="status"
+          class="rounded-md bg-green-50 px-3 py-2 text-sm text-green-800"
         >
-          {{ submitting ? 'Saving…' : isEdit ? 'Save changes' : 'Create page' }}
-        </button>
-        <RouterLink
-          :to="{ name: 'admin-pages' }"
-          class="text-sm font-medium text-slate-600 hover:underline"
-        >
-          Cancel
-        </RouterLink>
-        <span v-if="dirty" class="text-sm text-amber-700">Unsaved changes</span>
-      </div>
-    </form>
+          {{ notice }}
+        </p>
+
+        <div v-if="!readonly" class="flex flex-wrap items-center gap-3">
+          <button
+            type="submit"
+            :disabled="busy"
+            class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {{ submitting ? 'Saving…' : isEdit ? 'Save changes' : 'Create page' }}
+          </button>
+          <RouterLink
+            :to="{ name: 'admin-pages' }"
+            class="text-sm font-medium text-slate-600 hover:underline"
+          >
+            Cancel
+          </RouterLink>
+          <span v-if="dirty" class="text-sm text-amber-700">Unsaved changes</span>
+        </div>
+      </form>
+    </template>
   </section>
 </template>

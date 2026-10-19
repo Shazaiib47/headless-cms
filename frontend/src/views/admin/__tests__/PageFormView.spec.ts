@@ -49,6 +49,7 @@ async function mountForm(url: string, role: Role = 'editor') {
       { path: '/admin/pages', name: 'admin-pages', component: blank },
       { path: '/admin/pages/new', name: 'admin-page-new', component: blank },
       { path: '/admin/pages/:id(\\d+)/edit', name: 'admin-page-edit', component: blank },
+      { path: '/admin/pages/:id(\\d+)/preview', name: 'admin-page-preview', component: blank },
     ],
   })
   await router.push(url)

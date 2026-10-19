@@ -46,6 +46,12 @@ const router = createRouter({
           component: () => import('@/views/admin/PageFormView.vue'),
         },
         {
+          // Any signed-in role may preview; the API enforces this too.
+          path: 'pages/:id(\\d+)/preview',
+          name: 'admin-page-preview',
+          component: () => import('@/views/admin/PagePreviewView.vue'),
+        },
+        {
           path: 'users',
           name: 'admin-users',
           component: () => import('@/views/admin/UsersView.vue'),

@@ -96,4 +96,12 @@ describe('route guards', () => {
 
     expect(router.currentRoute.value.name).toBe('admin-page-edit')
   })
+
+  it('lets viewers open a page preview', async () => {
+    signInAs('viewer')
+
+    await router.push('/admin/pages/5/preview')
+
+    expect(router.currentRoute.value.name).toBe('admin-page-preview')
+  })
 })
