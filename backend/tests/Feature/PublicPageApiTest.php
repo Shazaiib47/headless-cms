@@ -29,7 +29,7 @@ class PublicPageApiTest extends TestCase
         $data = $this->getJson('/api/public/pages/about')->assertOk()->json('data');
 
         $this->assertSame(
-            ['title', 'slug', 'content', 'meta_title', 'meta_description', 'og_image_id', 'published_at', 'updated_at'],
+            ['title', 'slug', 'content', 'meta_title', 'meta_description', 'og_image_id', 'og_image', 'published_at', 'updated_at'],
             array_keys($data),
         );
     }

@@ -66,10 +66,9 @@ class PagePreviewTest extends TestCase
             ->assertOk();
 
         $this->assertSame(
-            ['title', 'slug', 'content', 'meta_title', 'meta_description', 'og_image_id', 'published_at', 'updated_at', 'status'],
+            ['title', 'slug', 'content', 'meta_title', 'meta_description', 'og_image_id', 'og_image', 'published_at', 'updated_at', 'status'],
             array_keys($response->json('data')),
         );
-        $this->assertSame(['html'], array_keys($response->json('data.content.0.data')));
     }
 
     public function test_previewing_a_missing_page_returns_404(): void

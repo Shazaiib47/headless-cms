@@ -4,7 +4,7 @@ A full-stack headless CMS that lets non-technical staff create, edit, preview,
 publish and manage website pages without changing code. Published content is
 delivered through a Laravel REST API to a public-facing Vue 3 frontend.
 
-> **Status:** In development. Milestones 01 to 08 complete.
+> **Status:** In development. Milestones 01 to 09 complete; Milestone 10 (media library) in progress.
 
 ## Tech stack
 
@@ -104,6 +104,8 @@ routes are open and for local development only.
 | POST | `/api/pages/{id}/unpublish` | Unpublish a page (editor or admin) |
 | GET | `/api/pages/{id}/preview` | Preview a page in the public format, any status (signed in) |
 | GET | `/api/public/pages/{slug}` | A published page by slug (no login) |
+| GET/POST | `/api/media` | List images, or upload one (multipart `file`, optional `alt_text`) |
+| GET/PATCH/DELETE | `/api/media/{id}` | View an image, edit its alt text, or delete it (admin only) |
 
 Responses use a `data` wrapper; lists add `links` and `meta`. Validation
 errors return HTTP 422 with an `errors` object. `status` and `published_at`
@@ -129,7 +131,53 @@ dropped.
 - Plain-text fields are stored verbatim: clients must escape them on output.
 - Updates may send `updated_at`; a stale value returns `409 Conflict`.
 
+### Publishing
+
+- Pages start as drafts. Publishing is a separate action: `status` and
+  `published_at` cannot be set through the normal create and update endpoints.
+- To publish, the saved page needs at least one block, and every image block
+  needs an image. Publishing and unpublishing are safe to repeat.
+- Editing a published page updates the live page immediately.
+- `GET /api/public/pages/{slug}` returns published pages only. Drafts,
+  unpublished and unknown slugs all return the same 404. The response contains
+  only public fields (no `id`, `status` or audit columns) and, for rich text,
+  only the generated `html`. It is rate limited, never sets a cookie, and
+  sends an `ETag` with `Cache-Control: public, no-cache`, so caches
+  revalidate on every request and unpublishing takes effect immediately.
+- `GET /api/pages/{id}/preview` shows the saved content of any page in the
+  public format to signed-in users, with `Cache-Control: no-store` and
+  `X-Robots-Tag: noindex`.
+- Browsers on other origins are blocked by CORS: only the configured frontend
+  origin may call this API.
+
+  ### Media library
+
+- Uploads accept **JPEG, PNG and WebP only**, up to 5 MB and 16 megapixels. The
+  type is detected from the file's contents, not its name.
+- Every upload is **decoded and re-encoded by the server**, which strips
+  metadata (including GPS location), removes anything hidden in the file and
+  rejects corrupt or disguised files. Images over 2560 px are scaled down and a
+  480 px thumbnail is created.
+- Files are stored under random names on the `public` disk. The original
+  filename is kept only as display text.
+- Editors and admins can upload and edit alt text. Only admins can delete, and
+  an image that a page still uses cannot be deleted.
+- The public page API returns each image as `{ url, thumbnail_url, width,
+  height, alt }` next to its `image_id`.
+- Uploads are limited to 30 per minute per user.
+
+**Requirements:** PHP `gd`, `exif` and `fileinfo` extensions; a writable upload
+temp folder; `upload_max_filesize` of at least 6M, `post_max_size` of at least
+8M and `memory_limit` of at least 256M; and `php artisan storage:link` once per
+environment.
+
+**Not included (future work):** virus scanning, storage quotas, cropping, PDFs
+and other document types, and cloud storage (set `MEDIA_DISK`).
+
+
 ## Frontend setup (Vue 3 + TypeScript)
+
+Publishing controls and a draft preview in the page editor, plus block-rendering components (reused by the public site).
 
 Admin: http://localhost:5173/admin (needs the backend running at http://localhost:8000).
 Admin screens: page list (search, filter, pagination) and user management (admin only)

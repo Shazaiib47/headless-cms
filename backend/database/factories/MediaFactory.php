@@ -9,10 +9,13 @@ class MediaFactory extends Factory
 {
     public function definition(): array
     {
+        $name = Str::uuid().'.jpg';
+
         return [
             'uploaded_by' => null,
             'disk' => 'public',
-            'path' => 'media/'.Str::uuid().'.jpg',
+            'path' => "media/{$name}",
+            'thumbnail_path' => "media/thumbs/{$name}",
             'original_name' => fake()->word().'.jpg',
             'mime_type' => 'image/jpeg',
             'size' => fake()->numberBetween(10_000, 2_000_000),
